@@ -1,0 +1,25 @@
+version: "3"
+services:
+  github-proxy:
+    container_name: github-proxy
+    depends_on:
+      - redis
+    build:
+      dockerfile: Dockerfile.dev
+      context: .
+    env_file:
+      - ./.env
+    ports:
+      - "3000:3000"
+    volumes:
+      - /app/node_modules
+      - ./:/app
+  redis:
+    container_name: redis
+    image: redis:6.2.6-alpine
+    ports:
+      - "6379:6379"
+  curler:
+    container_name: curler
+    image: yauritux/busybox-curl
+    command: sleep 90000
