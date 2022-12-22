@@ -1,6 +1,7 @@
 const express = require('express');
 const { createProxyMiddleware, fixRequestBody, responseInterceptor } = require('http-proxy-middleware');
 const redis = require('redis');
+const cors = require('cors');
 const dotenv = require('dotenv');
 const { promisify } = require("util");
 
@@ -21,16 +22,13 @@ const setAsync = promisify(client.set).bind(client);
 const mapping = {}
 
 app.use(express.json())
+app.use(cors({ origin: process.env.ORIGIN_URL }));
 app.use('/', createProxyMiddleware({
 	target: 'https://api.github.com/graphql',
 	pathRewrite: { '^/': '' },
 	selfHandleResponse: true,
 	changeOrigin: true,
 	onProxyReq: async (proxyReq, req, res) => {
-		// only set header if not present by OAuth
-		let token = patsArray[Math.floor(Math.random() * patsArray.length)];
-		proxyReq.setHeader('Authorization', `Bearer ${token}`);
-	
 		// combine the query and variables to get a unique key
 		const key = `${JSON.stringify(req.body.query)}${JSON.stringify(req.body.variables)}`
 
@@ -40,6 +38,15 @@ app.use('/', createProxyMiddleware({
 		// response will be null if there's an error or cache miss
 		if (response != undefined) {
 			return res.json(JSON.parse(response));
+		}
+
+		// If user is authenticated, use their OAuth token
+		// Otherwise, use a random PAT from our array
+		if (req.headers.github_oauth_token_unsigned) {
+			proxyReq.setHeader('Authorization', `Bearer ${req.headers.github_oauth_token_unsigned}`);
+		} else {
+			let token = patsArray[Math.floor(Math.random() * patsArray.length)];
+			proxyReq.setHeader('Authorization', `Bearer ${token}`);
 		}
 		
 		// this method provided by http-proxy-middleware fixes the body after bodyParser has it's way with it
