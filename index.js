@@ -32,7 +32,7 @@ app.use('/', createProxyMiddleware({
 		// combine the query and variables to get a unique key
 		const key = `${JSON.stringify(req.body.query)}${JSON.stringify(req.body.variables)}`
 
-		const response = await getAsync(client, key)
+		const response = await getAsync(key)
 
 		// response will be null if there's an error or cache miss
 		if (response != null) {
