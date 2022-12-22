@@ -15,18 +15,10 @@ const client = redis.createClient({
   port: parseInt(process.env.REDIS_PORT)
 });
 
-client.on('connect', () => {
-	console.log(client.ping())
-})
-
-client.on('end', () => console.log('end'));
-
-// client.on('error', (err) => {
-// 	console.log(err)
-// })
-
 const getAsync = promisify(client.get).bind(client);
 const setAsync = promisify(client.set).bind(client);
+
+const mapping = {}
 
 app.use(express.json())
 app.use('/', createProxyMiddleware({
@@ -42,10 +34,11 @@ app.use('/', createProxyMiddleware({
 		// combine the query and variables to get a unique key
 		const key = `${JSON.stringify(req.body.query)}${JSON.stringify(req.body.variables)}`
 
-		const response = await getAsync(key)
+		// const response = await getAsync(key)
+		const response = mapping[key]
 
 		// response will be null if there's an error or cache miss
-		if (response != null) {
+		if (response != undefined) {
 			return res.json(JSON.parse(response));
 		}
 		
@@ -56,9 +49,10 @@ app.use('/', createProxyMiddleware({
 		const key = `${JSON.stringify(req.body.query)}${JSON.stringify(req.body.variables)}`
     const response = responseBuffer.toString('utf8');
   
-		const hour = 60 * 60
+		// const hour = 60 * 60
+		// await setAsync(key, response, 'EX', hour)
 
-		await setAsync(key, response, 'EX', hour)
+		mapping[key] = response
 		
 		return response
   })
