@@ -46,14 +46,18 @@ app.use('/', createProxyMiddleware({
 
 		// If user is authenticated, use their OAuth token
 		// Otherwise, use a random PAT from our array
-		console.log('req.cookies', req.headers)
-		// if ('' !== undefined) {
-		// 	proxyReq.setHeader('Authorization', `Bearer ${req.cookies.github_oauth_token_unsigned}`);
+		// console.log('req.headers.authorization', req.headers.authorization)
+		// if (req.headers.authorization !== undefined) {
+		// 	proxyReq.setHeader('Authorization', `Bearer ${req.headers.authorization}`);
 		// } else {
 		// 	let token = patsArray[Math.floor(Math.random() * patsArray.length)];
 		// 	console.log('token', token)
 		// 	proxyReq.setHeader('Authorization', `Bearer ${token}`);
 		// }
+
+		let token = patsArray[Math.floor(Math.random() * patsArray.length)];
+		console.log('token', token)
+		proxyReq.setHeader('Authorization', `Bearer ${token}`);
 		
 		// this method provided by http-proxy-middleware fixes the body after bodyParser has it's way with it
 		fixRequestBody(proxyReq, req)
