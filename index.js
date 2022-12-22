@@ -15,6 +15,16 @@ const client = redis.createClient({
   port: parseInt(process.env.REDIS_PORT)
 });
 
+client.on('connect', () => {
+	console.log(client.ping())
+})
+
+client.on('end', () => console.log('end'));
+
+// client.on('error', (err) => {
+// 	console.log(err)
+// })
+
 const getAsync = promisify(client.get).bind(client);
 const setAsync = promisify(client.set).bind(client);
 
