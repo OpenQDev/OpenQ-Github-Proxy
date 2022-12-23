@@ -1,9 +1,8 @@
-FROM node:18.12.1-alpine
+FROM golang:latest
+
+COPY . /app
 WORKDIR /app
-RUN apk update && apk upgrade && \
-	apk add --no-cache bash git
-COPY package.json .
-RUN yarn
-COPY . .
-EXPOSE 3005
-ENTRYPOINT yarn start
+
+RUN go build main.go
+
+ENTRYPOINT ["./main"]
