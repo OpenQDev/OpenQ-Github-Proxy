@@ -9,29 +9,27 @@ import (
 // curl -X POST -H "Content-Type: application/json" -d '{"query": "query { repository(name: \"OpenQ-Frontend\", owner: \"OpenQDev\") { issue(number: 124) { title } } }"}' http://localhost:8081
 
 func main() {
-	originServerHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Parse the target URL
-		target, err := url.Parse("https://api.github.com")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	// Create a proxy server
+	proxy := httputil.NewSingleHostReverseProxy(&url.URL{
+		Scheme: "https",
+		Host:   "api.github.com",
+	})
 
-		// Append the authorization header
-		r.Header.Add("Authorization", "Bearer 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")
+	// Create a handler function for the proxy server
+	http.HandleFunc("/graphql", func(w http.ResponseWriter, r *http.Request) {
+		r.Header.Add("Authorization", "Bearer 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")
 
-		// Create a new reverse proxy
-		proxy := httputil.NewSingleHostReverseProxy(target)
+		// Set the URL path to the GraphQL endpoint
+		r.URL.Path = "/graphql"
 
-		// Update the headers to allow for SSL redirection
-		r.URL.Host = target.Host
-		r.URL.Scheme = target.Scheme
-		r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
-		r.Host = target.Host
+		// Set the Host header to the host of the GraphQL API
+		r.Host = "api.github.com"
 
-		// Proxy the request
+		// Serve the request through the proxy
 		proxy.ServeHTTP(w, r)
 	})
 
-	http.ListenAndServe(":8081", originServerHandler)
+	// Start the server
+	http.ListenAndServe(":8080", nil)
+
 }
