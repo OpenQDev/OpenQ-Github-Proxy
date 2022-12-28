@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,7 +15,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// curl -X POST -H "Content-Type: application/json" -d '{"query": "query { repository(name: \"OpenQ-Frontend\", owner: \"OpenQDev\") { issue(number: 124) { title } } }"}' http://localhost:8081
+// curl -X POST -H "Content-Type: application/json" -d '{"query": "query { repository(name: \"OpenQ-Frontend\", owner: \"OpenQDev\") { issue(number: 124) { title } } }"}' http://localhost:3005
 
 func main() {
 	err := godotenv.Load()
@@ -55,17 +56,41 @@ func main() {
 
 		// Generate a cache key for the request
 		// Read the request body
-		defer r.Body.Close()
-		body, _ := ioutil.ReadAll(r.Body)
+		// defer r.Body.Close()
+		// body, _ := ioutil.ReadAll(r.Body)
 
 		// Convert the request body to a JSON string
-		jsonString, err := convertToJSONString(body)
+		// jsonString, err := convertToJSONString(body)
+		// if err != nil {
+		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+		// 	return
+		// }
+
+		// Read the request body
+		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, "Error reading request body", http.StatusBadRequest)
 			return
 		}
 
-		key := r.URL.String() + r.Method + jsonString
+		fmt.Printf("%s", body)
+
+		// Parse the request body as a GraphQL query
+		var query string
+		err = json.Unmarshal(body, &query)
+		if err != nil {
+			http.Error(w, "Error parsing request body as GraphQL query", http.StatusBadRequest)
+			return
+		}
+
+		cacheKey, err := json.Marshal(query)
+		if err != nil {
+			http.Error(w, "Error marshalling GraphQL query to JSON", http.StatusInternalServerError)
+			return
+		}
+
+		// give me a random integer and convert it to a string
+		key := r.URL.String() + r.Method + string(cacheKey)
 
 		// Check if the response is in the cache
 		if val, err := client.Get(r.Context(), key).Result(); err == redis.Nil {
