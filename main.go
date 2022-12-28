@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -18,8 +17,6 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-
-	fmt.Printf("%v", os.Getenv("BEARER_TOKEN"))
 
 	// Create a proxy server
 	proxy := httputil.NewSingleHostReverseProxy(&url.URL{
@@ -51,5 +48,4 @@ func main() {
 
 	// Start the server
 	http.ListenAndServe(":3005", nil)
-
 }
