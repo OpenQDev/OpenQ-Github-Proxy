@@ -1,14 +1,26 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
+
+	"github.com/joho/godotenv"
 )
 
 // curl -X POST -H "Content-Type: application/json" -d '{"query": "query { repository(name: \"OpenQ-Frontend\", owner: \"OpenQDev\") { issue(number: 124) { title } } }"}' http://localhost:8081
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	fmt.Printf("%v", os.Getenv("BEARER_TOKEN"))
+
 	// Create a proxy server
 	proxy := httputil.NewSingleHostReverseProxy(&url.URL{
 		Scheme: "https",
@@ -16,8 +28,16 @@ func main() {
 	})
 
 	// Create a handler function for the proxy server
-	http.HandleFunc("/graphql", func(w http.ResponseWriter, r *http.Request) {
-		r.Header.Add("Authorization", "Bearer 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")
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Check for the "github_oauth_token_unsigned" cookie
+		if cookie, err := r.Cookie("github_oauth_token_unsigned"); err == nil {
+			// Add the cookie value as the Authorization header
+			r.Header.Set("Authorization", "Bearer "+cookie.Value)
+		} else {
+			// Add a default Authorization header
+			bearerToken := os.Getenv("BEARER_TOKEN")
+			r.Header.Set("Authorization", "Bearer "+bearerToken)
+		}
 
 		// Set the URL path to the GraphQL endpoint
 		r.URL.Path = "/graphql"
