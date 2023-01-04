@@ -30,7 +30,7 @@ func main() {
 		DB:       0,  // use default DB
 	})
 
-	// Create a proxy server
+	// Create a proxy server here
 	proxy := httputil.NewSingleHostReverseProxy(&url.URL{
 		Scheme: "https",
 		Host:   "api.github.com",
