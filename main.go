@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
-	"net/url"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -13,40 +12,54 @@ import (
 // curl -X POST -H "Content-Type: application/json" -d '{"query": "query { repository(name: \"OpenQ-Frontend\", owner: \"OpenQDev\") { issue(number: 124) { title } } }"}' http://localhost:3005
 
 func main() {
-
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	// Create a proxy server here
-	proxy := httputil.NewSingleHostReverseProxy(&url.URL{
-		Scheme: "https",
-		Host:   "api.github.com",
-	})
+	proxy := &httputil.ReverseProxy{
+		// A Director is used to modify the request before sending to target server
+		Director: func(r *http.Request) {
+			const OAUTH_TOKEN_COOKIE_NAME string = "github_oauth_token_unsigned"
 
-	// Create a handler function for the proxy server
+			// Check for the "github_oauth_token_unsigned" cookie
+			if cookie, err := r.Cookie(OAUTH_TOKEN_COOKIE_NAME); err == nil {
+				// Add the cookie value as the Authorization header if present
+				r.Header.Set("Authorization", "Bearer "+cookie.Value)
+			} else {
+				// Add a default Authorization header if not present
+				BearerToken := os.Getenv("BEARER_TOKEN")
+				r.Header.Set("Authorization", "Bearer "+BearerToken)
+			}
+
+			// Set the URL path to the GraphQL endpoint
+			r.URL.Scheme = "https"
+
+			r.URL.Path = "/graphql"
+
+			// Set the Host Header AND the URL Host to the GraphQL API endpoint (https://github.com/golang/go/issues/28168)
+			r.Host = "api.github.com"
+			r.URL.Host = "api.github.com"
+		},
+		// ModifyResponse is used to modify the response from the target server before sending it back to the client
+		ModifyResponse: func(r *http.Response) error {
+			// store response in cache here
+			return nil
+		},
+	}
+
+	// Create a Handler function on the DefaultServerMux to check cache before passing request to Proxy
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Check for the "github_oauth_token_unsigned" cookie
-		if cookie, err := r.Cookie("github_oauth_token_unsigned"); err == nil {
-			// Add the cookie value as the Authorization header
-			r.Header.Set("Authorization", "Bearer "+cookie.Value)
+		const CacheHit bool = false
+
+		if CacheHit {
+
 		} else {
-			// Add a default Authorization header
-			bearerToken := os.Getenv("BEARER_TOKEN")
-			r.Header.Set("Authorization", "Bearer "+bearerToken)
+			// Response not in cache, serve the request through the proxy
+			proxy.ServeHTTP(w, r)
 		}
-
-		// Set the URL path to the GraphQL endpoint
-		r.URL.Path = "/graphql"
-
-		// Set the Host header to the host of the GraphQL API
-		r.Host = "api.github.com"
-
-		// Response not in cache, serve the request through the proxy
-		proxy.ServeHTTP(w, r)
 	})
 
-	// Start the server
+	// Start the server using the DefaultServerMux
 	http.ListenAndServe(":3005", nil)
 }
