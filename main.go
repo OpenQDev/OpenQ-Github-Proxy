@@ -28,7 +28,7 @@ func main() {
 				r.Header.Set("Authorization", "Bearer "+cookie.Value)
 			} else {
 				// Add a default Authorization header if not present
-				BearerToken := os.Getenv("BEARER_TOKEN")
+				BearerToken := os.Getenv("PAT")
 				r.Header.Set("Authorization", "Bearer "+BearerToken)
 			}
 
