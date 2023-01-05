@@ -1,3 +1,5 @@
+FROM golang:latest
+
 WORKDIR /app
 
 COPY go.mod ./
@@ -10,4 +12,4 @@ RUN go build -o main main.go
 
 EXPOSE 3005
 
-CMD [ "/main" ]
+CMD [ "./main" ]
