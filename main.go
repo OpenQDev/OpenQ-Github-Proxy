@@ -58,6 +58,7 @@ func main() {
 	})
 
 	fmt.Println("Listening on port 3005")
+
 	// Start the server using the DefaultServerMux
 	http.ListenAndServe(":3005", nil)
 }
