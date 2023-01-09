@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -25,8 +27,12 @@ func main() {
 				r.Header.Set("Authorization", "Bearer "+cookie.Value)
 			} else {
 				// Add a default Authorization header if not present
-				BearerToken := os.Getenv("PAT")
-				r.Header.Set("Authorization", "Bearer "+BearerToken)
+				commaDelimitedPATs := os.Getenv("PATS")
+				pats := strings.Split(commaDelimitedPATs, ",")
+				index := rand.Intn(len(pats))
+				randomPat := pats[index]
+
+				r.Header.Set("Authorization", "Bearer "+randomPat)
 			}
 
 			// Set the URL path to the GraphQL endpoint
