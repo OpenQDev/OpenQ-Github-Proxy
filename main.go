@@ -9,7 +9,6 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/joho/godotenv"
@@ -63,23 +62,28 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 		return nil, err
 	}
 
-	// Modify response
-	b = bytes.Replace(b, []byte("server"), []byte("schmerver"), -1)
+	// Cache body with request hash as cache key
+
+	// Reattach body to resp
 	body := ioutil.NopCloser(bytes.NewReader(b))
 	resp.Body = body
-	resp.ContentLength = int64(len(b))
 
-	resp.Header.Set("Content-Length", strconv.Itoa(len(b)))
+	// Append CORS headers
 	resp.Header.Set("Access-Control-Allow-Origin", "http://localhost:3000")
 	resp.Header.Set("Access-Control-Allow-Headers", "*")
-	resp.Header.Set("Access-Control-Allow-Credential", "true")
+	resp.Header.Set("Access-Control-Allow-Credentials", "true")
+	resp.Header.Set("Access-Control-Allow-Methods", "*")
+
 	return resp, nil
 }
 
+// Set the default HTTP RoundTripper that will be used by the DefaultServerMux to our custom transport implementation
 var _ http.RoundTripper = &transport{}
 
 func main() {
 	godotenv.Load()
+
+	mux := http.NewServeMux()
 
 	target, err := url.Parse("https://api.github.com")
 	if err != nil {
@@ -89,10 +93,22 @@ func main() {
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	proxy.Transport = &transport{http.DefaultTransport}
 
-	http.Handle("/", proxy)
+	// Create a Handler function on the mux to check cache before passing request to Proxy
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		const CacheHit bool = false
 
+		if CacheHit {
+
+		} else {
+			// Response not in cache, serve the request through the proxy
+			proxy.ServeHTTP(w, r)
+		}
+	})
+
+	// Use proxy for all calls on DefaultServerMux
+	http.Handle("/", mux)
+
+	// Start the server using the DefaultServerMux
 	fmt.Println("Listening on port 3005")
-
-	// Start the server using the mux wrapped with CORs package to append necessary headers
 	http.ListenAndServe(":3005", nil)
 }
