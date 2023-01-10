@@ -69,10 +69,14 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 	resp.Body = body
 
 	// Append CORS headers
+	resp.Header = http.Header{}
 	resp.Header.Set("Access-Control-Allow-Origin", "http://localhost:3000")
 	resp.Header.Set("Access-Control-Allow-Headers", "*")
 	resp.Header.Set("Access-Control-Allow-Credentials", "true")
 	resp.Header.Set("Access-Control-Allow-Methods", "*")
+
+	resp.Header.Set("Content-Type", "application/json")
+	resp.Header.Set("Content-Encoding", "gzip")
 
 	return resp, nil
 }
@@ -96,6 +100,16 @@ func main() {
 	// Create a Handler function on the mux to check cache before passing request to Proxy
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		const CacheHit bool = false
+
+		if r.Method == http.MethodOptions {
+			headers := w.Header()
+			headers.Add("Access-Control-Allow-Origin", "http://localhost:3000")
+			headers.Add("Access-Control-Allow-Headers", "*")
+			headers.Add("Access-Control-Allow-Methods", "*")
+			headers.Add("Access-Control-Allow-Credentials", "true")
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 
 		if CacheHit {
 
