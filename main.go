@@ -73,6 +73,9 @@ func main() {
 	})
 
 	handler := c.Handler(mux)
+	
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	fmt.Println("Listening on port 3005")
 
