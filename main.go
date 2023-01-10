@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
+	"github.com/rs/cors"
 )
 
 // curl -X POST -H "Content-Type: application/json" -d '{"query": "query { repository(name: \"OpenQ-Frontend\", owner: \"OpenQDev\") { issue(number: 124) { title } } }"}' http://localhost:3005
@@ -51,8 +52,10 @@ func main() {
 		},
 	}
 
-	// Create a Handler function on the DefaultServerMux to check cache before passing request to Proxy
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+
+	// Create a Handler function on the mux to check cache before passing request to Proxy
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		const CacheHit bool = false
 
 		if CacheHit {
@@ -63,8 +66,16 @@ func main() {
 		}
 	})
 
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowCredentials: true,
+		AllowedHeaders:   []string{"*"},
+	})
+
+	handler := c.Handler(mux)
+
 	fmt.Println("Listening on port 3005")
 
-	// Start the server using the DefaultServerMux
-	http.ListenAndServe(":3005", nil)
+	// Start the server using the mux wrapped with CORs package to append necessary headers
+	http.ListenAndServe(":3005", handler)
 }
