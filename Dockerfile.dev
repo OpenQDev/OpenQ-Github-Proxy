@@ -1,0 +1,11 @@
+FROM golang:latest
+
+WORKDIR /app
+
+COPY . .
+
+EXPOSE 3005
+
+RUN go install github.com/cosmtrek/air@latest
+
+ENTRYPOINT [ "air" ]

@@ -7,12 +7,9 @@ services:
     build:
       dockerfile: Dockerfile.dev
       context: .
-    env_file:
-      - ./.env
     ports:
-      - "3000:3000"
+      - "3005:3005"
     volumes:
-      - /app/node_modules
       - ./:/app
   redis:
     container_name: redis

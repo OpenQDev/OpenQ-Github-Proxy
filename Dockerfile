@@ -12,4 +12,4 @@ RUN go build -o main main.go
 
 EXPOSE 3005
 
-CMD [ "./main" ]
+ENTRYPOINT [ "./main" ]
