@@ -104,8 +104,8 @@ func main() {
 		if r.Method == http.MethodOptions {
 			headers := w.Header()
 			headers.Add("Access-Control-Allow-Origin", "http://localhost:3000")
-			headers.Add("Access-Control-Allow-Headers", "*")
-			headers.Add("Access-Control-Allow-Methods", "*")
+			headers.Add("Access-Control-Allow-Headers", "Content-Type")
+			headers.Add("Access-Control-Allow-Methods", "POST")
 			headers.Add("Access-Control-Allow-Credentials", "true")
 			w.WriteHeader(http.StatusNoContent)
 			return
