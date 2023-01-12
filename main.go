@@ -28,7 +28,7 @@ var _ http.RoundTripper = &transport{}
 
 // Create a client for the Redis server
 var client = redis.NewClient(&redis.Options{
-	Addr:     "localhost:6379",
+	Addr:     os.Getenv("REDIS_URL"),
 	Password: "", // no password set
 	DB:       0,  // use default DB
 })
