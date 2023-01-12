@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/go-redis/redis/v9"
 	"github.com/joho/godotenv"
@@ -88,7 +89,7 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 		return nil, err
 	}
 
-	rerr := client.Set(req.Context(), cacheKey, b, 0).Err()
+	rerr := client.Set(req.Context(), cacheKey, b, 1*time.Hour).Err()
 	if rerr != nil {
 		panic(err)
 	}
