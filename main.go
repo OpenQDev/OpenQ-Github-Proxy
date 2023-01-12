@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -20,6 +22,16 @@ import (
 type transport struct {
 	http.RoundTripper
 }
+
+// Set the default HTTP RoundTripper that will be used by the DefaultServerMux to our custom transport implementation
+var _ http.RoundTripper = &transport{}
+
+// Create a client for the Redis server
+var client = redis.NewClient(&redis.Options{
+	Addr:     "localhost:6379",
+	Password: "", // no password set
+	DB:       0,  // use default DB
+})
 
 func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	const OAUTH_TOKEN_COOKIE_NAME string = "github_oauth_token_unsigned"
@@ -47,6 +59,24 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 	req.Host = "api.github.com"
 	req.URL.Host = "api.github.com"
 
+	reqBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	h := sha256.New()
+	h.Write([]byte(string(reqBody)))
+	cacheHex := h.Sum(nil)
+	cacheKey := hex.EncodeToString(cacheHex)
+
+	err = req.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	newBody := ioutil.NopCloser(bytes.NewReader(reqBody))
+	req.Body = newBody
+
 	// Make request
 	resp, err = t.RoundTripper.RoundTrip(req)
 	if err != nil {
@@ -56,6 +86,11 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	rerr := client.Set(req.Context(), cacheKey, b, 0).Err()
+	if rerr != nil {
+		panic(err)
 	}
 
 	err = resp.Body.Close()
@@ -82,9 +117,6 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 	return resp, nil
 }
 
-// Set the default HTTP RoundTripper that will be used by the DefaultServerMux to our custom transport implementation
-var _ http.RoundTripper = &transport{}
-
 func main() {
 	godotenv.Load()
 
@@ -97,15 +129,6 @@ func main() {
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	proxy.Transport = &transport{http.DefaultTransport}
-
-	// Create a client for the Redis server
-	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-
-	fmt.Println(client)
 
 	// Create a Handler function on the mux to check cache before passing request to Proxy
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -120,10 +143,27 @@ func main() {
 			return
 		}
 
-		const key = "fsdfoo"
+		reqBody, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+
+		h := sha256.New()
+		h.Write([]byte(string(reqBody)))
+		cacheHex := h.Sum(nil)
+		cacheKey := hex.EncodeToString(cacheHex)
+		fmt.Println(cacheKey)
+
+		err = r.Body.Close()
+		if err != nil {
+			panic(err)
+		}
+
+		newBody := ioutil.NopCloser(bytes.NewReader(reqBody))
+		r.Body = newBody
 
 		// Check if the response is in the cache
-		val, err := client.Get(r.Context(), key).Result()
+		val, err := client.Get(r.Context(), cacheKey).Result()
 
 		if err == redis.Nil {
 			// Cache miss
@@ -133,6 +173,13 @@ func main() {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		} else {
 			// Response found in cache, serve it to the client
+			w.Header().Set("Access-Control-Allow-Origin", os.Getenv("ORIGIN"))
+			w.Header().Set("Access-Control-Allow-Headers", "*")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			w.Header().Set("Access-Control-Allow-Methods", "*")
+
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Content-Encoding", "gzip")
 			w.Write([]byte(val))
 		}
 	})
