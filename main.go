@@ -70,7 +70,7 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 
 	// Append CORS headers
 	resp.Header = http.Header{}
-	resp.Header.Set("Access-Control-Allow-Origin", "http://localhost:3000")
+	resp.Header.Set("Access-Control-Allow-Origin", os.Getenv("ORIGIN"))
 	resp.Header.Set("Access-Control-Allow-Headers", "*")
 	resp.Header.Set("Access-Control-Allow-Credentials", "true")
 	resp.Header.Set("Access-Control-Allow-Methods", "*")
