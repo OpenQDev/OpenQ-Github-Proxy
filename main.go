@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/go-redis/redis/v9"
 	"github.com/joho/godotenv"
 )
 
@@ -97,13 +98,21 @@ func main() {
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	proxy.Transport = &transport{http.DefaultTransport}
 
+	// Create a client for the Redis server
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
+	fmt.Println(client)
+
 	// Create a Handler function on the mux to check cache before passing request to Proxy
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		const CacheHit bool = false
 
 		if r.Method == http.MethodOptions {
 			headers := w.Header()
-			headers.Add("Access-Control-Allow-Origin", "http://localhost:3000")
+			headers.Add("Access-Control-Allow-Origin", os.Getenv("ORIGIN"))
 			headers.Add("Access-Control-Allow-Headers", "Content-Type")
 			headers.Add("Access-Control-Allow-Methods", "POST")
 			headers.Add("Access-Control-Allow-Credentials", "true")
@@ -111,11 +120,20 @@ func main() {
 			return
 		}
 
-		if CacheHit {
+		const key = "fsdfoo"
 
-		} else {
-			// Response not in cache, serve the request through the proxy
+		// Check if the response is in the cache
+		val, err := client.Get(r.Context(), key).Result()
+
+		if err == redis.Nil {
+			// Cache miss
 			proxy.ServeHTTP(w, r)
+		} else if err != nil {
+			// Error occurred while fetching from cache
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		} else {
+			// Response found in cache, serve it to the client
+			w.Write([]byte(val))
 		}
 	})
 
