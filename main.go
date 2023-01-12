@@ -134,12 +134,13 @@ func main() {
 	// Create a Handler function on the mux to check cache before passing request to Proxy
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 
+		// Account for CORS preflight request
 		if r.Method == http.MethodOptions {
 			headers := w.Header()
 			headers.Add("Access-Control-Allow-Origin", os.Getenv("ORIGIN"))
+			headers.Add("Access-Control-Allow-Credentials", "true")
 			headers.Add("Access-Control-Allow-Headers", "Content-Type")
 			headers.Add("Access-Control-Allow-Methods", "POST")
-			headers.Add("Access-Control-Allow-Credentials", "true")
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
@@ -166,18 +167,21 @@ func main() {
 		val, err := client.Get(r.Context(), cacheKey).Result()
 
 		if err == redis.Nil {
-			// Cache miss
+			// Cache miss, proxy request to Github GraphQL API
 			proxy.ServeHTTP(w, r)
 		} else if err != nil {
 			// Error occurred while fetching from cache
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		} else {
 			// Response found in cache, serve it to the client
-			w.Header().Set("Access-Control-Allow-Origin", os.Getenv("ORIGIN"))
-			w.Header().Set("Access-Control-Allow-Headers", "*")
-			w.Header().Set("Access-Control-Allow-Credentials", "true")
-			w.Header().Set("Access-Control-Allow-Methods", "*")
 
+			// Add CORS headers
+			w.Header().Set("Access-Control-Allow-Origin", os.Getenv("ORIGIN"))
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			w.Header().Set("Access-Control-Allow-Methods", "POST")
+
+			// Content-Type and Content-Encoding allow clients to properly decompress the response
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("Content-Encoding", "gzip")
 			w.Write([]byte(val))
