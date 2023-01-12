@@ -152,7 +152,6 @@ func main() {
 		h.Write([]byte(string(reqBody)))
 		cacheHex := h.Sum(nil)
 		cacheKey := hex.EncodeToString(cacheHex)
-		fmt.Println(cacheKey)
 
 		err = r.Body.Close()
 		if err != nil {
