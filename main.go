@@ -2,8 +2,6 @@ package main
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -12,9 +10,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"time"
 
-	"github.com/go-redis/redis/v9"
 	"github.com/joho/godotenv"
 )
 
@@ -26,13 +22,6 @@ type transport struct {
 
 // Set the default HTTP RoundTripper that will be used by the DefaultServerMux to our custom transport implementation
 var _ http.RoundTripper = &transport{}
-
-// Create a client for the Redis server
-var client = redis.NewClient(&redis.Options{
-	Addr:     os.Getenv("REDIS_URL"),
-	Password: "", // no password set
-	DB:       0,  // use default DB
-})
 
 func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	const OAUTH_TOKEN_COOKIE_NAME string = "github_oauth_token_unsigned"
@@ -60,24 +49,6 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 	req.Host = "api.github.com"
 	req.URL.Host = "api.github.com"
 
-	reqBody, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	h := sha256.New()
-	h.Write([]byte(string(reqBody)))
-	cacheHex := h.Sum(nil)
-	cacheKey := hex.EncodeToString(cacheHex)
-
-	err = req.Body.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	newBody := ioutil.NopCloser(bytes.NewReader(reqBody))
-	req.Body = newBody
-
 	// Make request
 	resp, err = t.RoundTripper.RoundTrip(req)
 	if err != nil {
@@ -89,17 +60,10 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 		return nil, err
 	}
 
-	rerr := client.Set(req.Context(), cacheKey, b, 1*time.Hour).Err()
-	if rerr != nil {
-		panic(err)
-	}
-
 	err = resp.Body.Close()
 	if err != nil {
 		return nil, err
 	}
-
-	// Cache body with request hash as cache key
 
 	// Reattach body to resp
 	body := ioutil.NopCloser(bytes.NewReader(b))
@@ -145,47 +109,8 @@ func main() {
 			return
 		}
 
-		reqBody, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			panic(err)
-		}
-
-		h := sha256.New()
-		h.Write([]byte(string(reqBody)))
-		cacheHex := h.Sum(nil)
-		cacheKey := hex.EncodeToString(cacheHex)
-
-		err = r.Body.Close()
-		if err != nil {
-			panic(err)
-		}
-
-		newBody := ioutil.NopCloser(bytes.NewReader(reqBody))
-		r.Body = newBody
-
 		// Check if the response is in the cache
-		val, err := client.Get(r.Context(), cacheKey).Result()
-
-		if err == redis.Nil {
-			// Cache miss, proxy request to Github GraphQL API
-			proxy.ServeHTTP(w, r)
-		} else if err != nil {
-			// Error occurred while fetching from cache
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		} else {
-			// Response found in cache, serve it to the client
-
-			// Add CORS headers
-			w.Header().Set("Access-Control-Allow-Origin", os.Getenv("ORIGIN"))
-			w.Header().Set("Access-Control-Allow-Credentials", "true")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-			w.Header().Set("Access-Control-Allow-Methods", "POST")
-
-			// Content-Type and Content-Encoding allow clients to properly decompress the response
-			w.Header().Set("Content-Type", "application/json")
-			w.Header().Set("Content-Encoding", "gzip")
-			w.Write([]byte(val))
-		}
+		proxy.ServeHTTP(w, r)
 	})
 
 	// Use proxy for all calls on DefaultServerMux
