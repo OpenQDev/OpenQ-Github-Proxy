@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
@@ -15,10 +16,11 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v9"
-	"github.com/joho/godotenv"
+
+	_ "github.com/joho/godotenv/autoload"
 )
 
-// curl -X POST -H "Content-Type: application/json" -d '{"query": "query { repository(name: \"OpenQ-Frontend\", owner: \"OpenQDev\") { issue(number: 124) { title } } }"}' http://localhost:3005
+// NOTE: The underscore before `github.com/joho/godotenv/autoload` autoloads the .env if available
 
 type transport struct {
 	http.RoundTripper
@@ -29,9 +31,13 @@ var _ http.RoundTripper = &transport{}
 
 // Create a client for the Redis server
 var client = redis.NewClient(&redis.Options{
-	Addr:     os.Getenv("REDIS_URL"),
-	Password: "", // no password set
-	DB:       0,  // use default DB
+	Addr:     os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT"),
+	Username: os.Getenv("REDIS_USERNAME"),
+	Password: os.Getenv("REDIS_PASSWORD"),
+	DB:       0,
+	TLSConfig: &tls.Config{
+		MinVersion: tls.VersionTLS12,
+	},
 })
 
 func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
@@ -118,8 +124,6 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 }
 
 func main() {
-	godotenv.Load()
-
 	mux := http.NewServeMux()
 
 	target, err := url.Parse("https://api.github.com")
