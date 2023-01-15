@@ -106,11 +106,10 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 	resp.Body = body
 
 	// Append CORS headers
-	resp.Header = http.Header{}
 	resp.Header.Set("Access-Control-Allow-Origin", os.Getenv("ORIGIN"))
 	resp.Header.Set("Access-Control-Allow-Headers", "*")
 	resp.Header.Set("Access-Control-Allow-Credentials", "true")
-	resp.Header.Set("Access-Control-Allow-Methods", "*")
+	resp.Header.Set("Access-Control-Allow-Methods", "POST")
 
 	resp.Header.Set("Content-Type", "application/json")
 	resp.Header.Set("Content-Encoding", "gzip")
