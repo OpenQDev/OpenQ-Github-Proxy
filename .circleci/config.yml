@@ -6,8 +6,14 @@ jobs:
     machine: true
     steps:
       - checkout
+      - run:
+          name: Update DEPLOY_ENV environment variable using CIRCLE_TAG
+          command: |
+            echo 'export DEPLOY_ENV=$(echo ${CIRCLE_TAG} | sed 's/-.*//')' >> $BASH_ENV
+            source $BASH_ENV
+      - run: echo $DEPLOY_ENV
       - run: echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USER --password-stdin
-      - run: docker build -t openq/openq-github-proxy:$CIRCLE_TAG --build-arg port=3001 --build-arg clientId=$OPENQ_ID --build-arg clientSecret=$OPENQ_SECRET .
+      - run: docker build -t openq/openq-github-proxy:$CIRCLE_TAG  --build-arg deploy_env=$DEPLOY_ENV .
       - run: docker push openq/openq-github-proxy:$CIRCLE_TAG
   pushHelm:
     machine: true
