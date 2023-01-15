@@ -35,9 +35,6 @@ var client = redis.NewClient(&redis.Options{
 	Username: os.Getenv("REDIS_USERNAME"),
 	Password: os.Getenv("REDIS_PASSWORD"),
 	DB:       0,
-	TLSConfig: &tls.Config{
-		MinVersion: tls.VersionTLS12,
-	},
 })
 
 func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
@@ -122,6 +119,14 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 }
 
 func main() {
+	// Turn on TLS mode if running anywhere except locally
+	if os.Getenv("DEPLOY_ENV") == "production" || os.Getenv("DEPLOY_ENV") == "staging" {
+		client.Options().TLSConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+	}
+
+	fmt.Println(client)
 	mux := http.NewServeMux()
 
 	target, err := url.Parse("https://api.github.com")
