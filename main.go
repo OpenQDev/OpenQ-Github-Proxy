@@ -126,7 +126,6 @@ func main() {
 		}
 	}
 
-	fmt.Println(client)
 	mux := http.NewServeMux()
 
 	target, err := url.Parse("https://api.github.com")
@@ -192,10 +191,7 @@ func main() {
 		}
 	})
 
-	// Use proxy for all calls on DefaultServerMux
-	http.Handle("/", mux)
-
-	// Start the server using the DefaultServerMux
+	// Start the server using the custom mux
 	fmt.Println("Listening on port 3005")
-	http.ListenAndServe(":3005", nil)
+	http.ListenAndServe(":3005", mux)
 }
