@@ -105,8 +105,6 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 		return nil, err
 	}
 
-	// Cache body with request hash as cache key
-
 	// Reattach body to resp
 	body := ioutil.NopCloser(bytes.NewReader(b))
 	resp.Body = body
