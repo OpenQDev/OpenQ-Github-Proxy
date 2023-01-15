@@ -166,16 +166,18 @@ func main() {
 
 		if err == redis.Nil {
 			// Cache miss
+			fmt.Println("Cache miss. Calling Github GraphQL API")
 			proxy.ServeHTTP(w, r)
 		} else if err != nil {
 			// Error occurred while fetching from cache
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		} else {
+			fmt.Println("Cache hit! Sending cached response.")
 			// Response found in cache, serve it to the client
 			w.Header().Set("Access-Control-Allow-Origin", os.Getenv("ORIGIN"))
 			w.Header().Set("Access-Control-Allow-Headers", "*")
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
-			w.Header().Set("Access-Control-Allow-Methods", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "POST")
 
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("Content-Encoding", "gzip")
