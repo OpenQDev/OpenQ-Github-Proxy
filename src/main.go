@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"os"
 
 	"github.com/go-redis/redis/v9"
@@ -22,15 +20,8 @@ import (
 var client = getRedisClient()
 
 func main() {
+	proxy := getProxy()
 	mux := getMux()
-
-	target, err := url.Parse("https://api.github.com")
-	if err != nil {
-		panic(err)
-	}
-
-	proxy := httputil.NewSingleHostReverseProxy(target)
-	proxy.Transport = &transport{http.DefaultTransport}
 
 	// Create a Handler function on the mux to check cache before passing request to Proxy
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
