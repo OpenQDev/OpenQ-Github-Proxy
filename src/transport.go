@@ -15,7 +15,7 @@ type transport struct {
 	http.RoundTripper
 }
 
-func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
+func setAuthorizationHeader(req *http.Request) {
 	const OAUTH_TOKEN_COOKIE_NAME string = "github_oauth_token_unsigned"
 
 	// Check for the "github_oauth_token_unsigned" cookie
@@ -31,7 +31,9 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 
 		req.Header.Set("Authorization", "Bearer "+randomPat)
 	}
+}
 
+func prepareRequestForRedirect(req *http.Request) {
 	// Set the URL path to the GraphQL endpoint
 	req.URL.Scheme = "https"
 
@@ -40,6 +42,12 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 	// Set the Host Header AND the URL Host to the GraphQL API endpoint (https://github.com/golang/go/issues/28168)
 	req.Host = "api.github.com"
 	req.URL.Host = "api.github.com"
+}
+
+func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
+	setAuthorizationHeader(req)
+
+	prepareRequestForRedirect(req)
 
 	cacheKey, err := generateCacheKeyFromRequest(req)
 	if err != nil {
