@@ -30,7 +30,7 @@ type RequestBody struct {
 	Variables map[string]interface{} `json:"variables"`
 }
 
-func mapIdsToCacheKeys(req *http.Request) {
+func mapIdsToCacheKeys(req *http.Request, cacheKey string) {
 	// Get variables off of the request body (GraphQL query)
 	var bodyType RequestBody
 	body, _ := ioutil.ReadAll(req.Body)
@@ -53,6 +53,8 @@ func mapIdsToCacheKeys(req *http.Request) {
 
 	fmt.Println("ids", strData)
 
+	client.LPush(req.Context(), id, []string{cacheKey})
+
 	req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 	return
 }
@@ -62,7 +64,7 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 	prepareRequestForRedirect(req)
 
 	cacheKey, err := generateCacheKeyFromRequest(req)
-	mapIdsToCacheKeys(req)
+	mapIdsToCacheKeys(req, cacheKey)
 
 	if err != nil {
 		log.Panic(err)
