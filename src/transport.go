@@ -44,8 +44,14 @@ func mapIdsToCacheKeys(req *http.Request) {
 	id := bodyType.Variables["id"].(string)
 	fmt.Println("id", id)
 
-	// ids := body.Variables["ids"].([]string)
-	// fmt.Println("ids", ids)
+	ids := bodyType.Variables["ids"].([]interface{})
+	var strData []string
+
+	for _, v := range ids {
+		strData = append(strData, v.(string))
+	}
+
+	fmt.Println("ids", strData)
 
 	req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 	return
