@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -23,11 +25,33 @@ func prepareRequestForRedirect(req *http.Request) {
 	req.URL.Host = "api.github.com"
 }
 
+type RequestBody struct {
+	Query     string                 `json:"query"`
+	Variables map[string]interface{} `json:"variables"`
+}
+
+func extractIds(req *http.Request) ([]string, error) {
+	ids := []string{}
+
+	var body RequestBody
+	err := json.NewDecoder(req.Body).Decode(&body)
+	if err != nil {
+		panic(err)
+	}
+
+	cool := body.Variables["bountyId"].(string)
+	fmt.Println("sdfsdfsdfsdfsd", cool)
+
+	return ids, nil
+}
+
 func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	setAuthorizationHeader(req)
 	prepareRequestForRedirect(req)
 
 	cacheKey, err := generateCacheKeyFromRequest(req)
+	extractIds(req)
+
 	if err != nil {
 		log.Panic(err)
 	}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,8 +11,23 @@ import (
 	"github.com/go-redis/redis/v9"
 )
 
+func invalidateEntity(w http.ResponseWriter, r *http.Request) {
+	var body RequestBody
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		panic(err)
+	}
+
+	id := body.Variables["bountyId"].(string)
+	fmt.Println(id)
+
+	return
+}
+
 func getMux(proxy *httputil.ReverseProxy) *http.ServeMux {
 	mux := http.NewServeMux()
+
+	mux.HandleFunc("/invalidate_entity", invalidateEntity)
 
 	// Create a Handler function on the mux to check cache before passing request to Proxy
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
