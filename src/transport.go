@@ -34,9 +34,8 @@ func setAuthorizationHeader(req *http.Request) {
 }
 
 func prepareRequestForRedirect(req *http.Request) {
-	// Set the URL path to the GraphQL endpoint
+	// Set the URL path to the Github GraphQL endpoint
 	req.URL.Scheme = "https"
-
 	req.URL.Path = "/graphql"
 
 	// Set the Host Header AND the URL Host to the GraphQL API endpoint (https://github.com/golang/go/issues/28168)
