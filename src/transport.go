@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -33,30 +32,30 @@ type RequestBody struct {
 func mapIdsToCacheKeys(req *http.Request, cacheKey string) {
 	// Get variables off of the request body (GraphQL query)
 	var bodyType RequestBody
+
+	// Save body to re-append to req later
 	body, _ := ioutil.ReadAll(req.Body)
 
+	// Decode body to JSON
 	err := json.NewDecoder(bytes.NewReader(body)).Decode(&bodyType)
 	if err != nil {
 		panic(err)
 	}
 
-	// It will either be called id or ids
+	// Variable will either be called id or ids
+
+	// SINGULAR ID
 	id := bodyType.Variables["id"].(string)
-	fmt.Println("id", id)
-
-	ids := bodyType.Variables["ids"].([]interface{})
-	var strData []string
-
-	for _, v := range ids {
-		strData = append(strData, v.(string))
-	}
-
-	fmt.Println("ids", strData)
-
 	client.LPush(req.Context(), id, []string{cacheKey})
 
+	// PLURAL IDs
+	ids := bodyType.Variables["ids"].([]interface{})
+	for _, v := range ids {
+		client.LPush(req.Context(), v.(string), cacheKey)
+	}
+
+	// Re-append request body to *http.Request pointer for later modification
 	req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-	return
 }
 
 func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
