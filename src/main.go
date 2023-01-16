@@ -18,12 +18,11 @@ import (
 
 // NOTE: The underscore before `github.com/joho/godotenv/autoload` autoloads the .env if available
 
-// Create a client for the Redis server
+// Create a client for the Redis server based on current deploy environment
 var client = getRedisClient()
 
 func main() {
-
-	mux := http.NewServeMux()
+	mux := getMux()
 
 	target, err := url.Parse("https://api.github.com")
 	if err != nil {
