@@ -30,19 +30,25 @@ type RequestBody struct {
 	Variables map[string]interface{} `json:"variables"`
 }
 
-func extractIds(req *http.Request) ([]string, error) {
-	ids := []string{}
+func mapIdsToCacheKeys(req *http.Request) {
+	// Get variables off of the request body (GraphQL query)
+	var bodyType RequestBody
+	body, _ := ioutil.ReadAll(req.Body)
 
-	var body RequestBody
-	err := json.NewDecoder(req.Body).Decode(&body)
+	err := json.NewDecoder(bytes.NewReader(body)).Decode(&bodyType)
 	if err != nil {
 		panic(err)
 	}
 
-	cool := body.Variables["bountyId"].(string)
-	fmt.Println("sdfsdfsdfsdfsd", cool)
+	// It will either be called id or ids
+	id := bodyType.Variables["id"].(string)
+	fmt.Println("id", id)
 
-	return ids, nil
+	// ids := body.Variables["ids"].([]string)
+	// fmt.Println("ids", ids)
+
+	req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	return
 }
 
 func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
@@ -50,7 +56,7 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 	prepareRequestForRedirect(req)
 
 	cacheKey, err := generateCacheKeyFromRequest(req)
-	extractIds(req)
+	mapIdsToCacheKeys(req)
 
 	if err != nil {
 		log.Panic(err)

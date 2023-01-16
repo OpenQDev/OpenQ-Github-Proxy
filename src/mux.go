@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,16 +11,14 @@ import (
 )
 
 func invalidateEntity(w http.ResponseWriter, r *http.Request) {
-	var body RequestBody
-	err := json.NewDecoder(r.Body).Decode(&body)
-	if err != nil {
-		panic(err)
-	}
-
-	id := body.Variables["bountyId"].(string)
+	id := r.FormValue("id")
 	fmt.Println(id)
 
-	return
+	// Get list of cache keys including this id
+
+	// Range over list and delete each one
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func getMux(proxy *httputil.ReverseProxy) *http.ServeMux {
