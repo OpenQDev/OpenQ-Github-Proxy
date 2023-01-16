@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"crypto/sha256"
-	"crypto/tls"
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
@@ -23,12 +22,6 @@ import (
 var client = getRedisClient()
 
 func main() {
-	// Turn on TLS mode if running anywhere except locally
-	if os.Getenv("DEPLOY_ENV") == "production" || os.Getenv("DEPLOY_ENV") == "staging" {
-		client.Options().TLSConfig = &tls.Config{
-			MinVersion: tls.VersionTLS12,
-		}
-	}
 
 	mux := http.NewServeMux()
 
