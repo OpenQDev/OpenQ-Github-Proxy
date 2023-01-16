@@ -12,11 +12,15 @@ import (
 
 func invalidateEntity(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
-	fmt.Println(id)
 
 	// Get list of cache keys including this id
+	length := client.LLen(r.Context(), id).Val() - 1
+	cacheKeys := client.LRange(r.Context(), id, 0, length)
 
-	// Range over list and delete each one
+	err := client.Del(r.Context(), cacheKeys.Val()...).Err()
+	if err != nil {
+		log.Panic(err)
+	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
