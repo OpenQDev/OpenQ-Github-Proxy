@@ -46,7 +46,6 @@ func prepareRequestForRedirect(req *http.Request) {
 
 func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	setAuthorizationHeader(req)
-
 	prepareRequestForRedirect(req)
 
 	cacheKey, err := generateCacheKeyFromRequest(req)
@@ -60,24 +59,7 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 		return nil, err
 	}
 
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	rerr := client.Set(req.Context(), cacheKey, b, 1*time.Hour).Err()
-	if rerr != nil {
-		panic(err)
-	}
-
-	err = resp.Body.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	// Reattach body to resp
-	body := ioutil.NopCloser(bytes.NewReader(b))
-	resp.Body = body
+	cacheResponse(cacheKey, req, resp)
 
 	// Append CORS headers
 	resp.Header.Set("Access-Control-Allow-Origin", os.Getenv("ORIGIN"))
@@ -89,4 +71,27 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 	resp.Header.Set("Content-Encoding", "gzip")
 
 	return resp, nil
+}
+
+func cacheResponse(cacheKey string, req *http.Request, resp *http.Response) error {
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	rerr := client.Set(req.Context(), cacheKey, b, 1*time.Hour).Err()
+	if rerr != nil {
+		panic(err)
+	}
+
+	err = resp.Body.Close()
+	if err != nil {
+		return err
+	}
+
+	// Reattach body to resp
+	body := ioutil.NopCloser(bytes.NewReader(b))
+	resp.Body = body
+
+	return nil
 }
