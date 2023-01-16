@@ -20,12 +20,7 @@ import (
 // NOTE: The underscore before `github.com/joho/godotenv/autoload` autoloads the .env if available
 
 // Create a client for the Redis server
-var client = redis.NewClient(&redis.Options{
-	Addr:     os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT"),
-	Username: os.Getenv("REDIS_USERNAME"),
-	Password: os.Getenv("REDIS_PASSWORD"),
-	DB:       0,
-})
+var client = getRedisClient()
 
 func main() {
 	// Turn on TLS mode if running anywhere except locally
