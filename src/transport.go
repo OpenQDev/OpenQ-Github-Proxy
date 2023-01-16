@@ -2,9 +2,8 @@ package main
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -42,23 +41,10 @@ func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 	req.Host = "api.github.com"
 	req.URL.Host = "api.github.com"
 
-	reqBody, err := ioutil.ReadAll(req.Body)
+	cacheKey, err := generateCacheKeyFromRequest(req)
 	if err != nil {
-		return nil, err
+		log.Panic(err)
 	}
-
-	h := sha256.New()
-	h.Write([]byte(string(reqBody)))
-	cacheHex := h.Sum(nil)
-	cacheKey := hex.EncodeToString(cacheHex)
-
-	err = req.Body.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	newBody := ioutil.NopCloser(bytes.NewReader(reqBody))
-	req.Body = newBody
 
 	// Make request
 	resp, err = t.RoundTripper.RoundTrip(req)
