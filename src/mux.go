@@ -1,11 +1,8 @@
 package main
 
 import (
-	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
-	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"os"
@@ -29,23 +26,10 @@ func getMux(proxy *httputil.ReverseProxy) *http.ServeMux {
 			return
 		}
 
-		reqBody, err := ioutil.ReadAll(r.Body)
+		cacheKey, err := generateCacheKeyFromRequest(r)
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
-
-		h := sha256.New()
-		h.Write([]byte(string(reqBody)))
-		cacheHex := h.Sum(nil)
-		cacheKey := hex.EncodeToString(cacheHex)
-
-		err = r.Body.Close()
-		if err != nil {
-			panic(err)
-		}
-
-		newBody := ioutil.NopCloser(bytes.NewReader(reqBody))
-		r.Body = newBody
 
 		// Check if the response is in the cache
 		val, err := client.Get(r.Context(), cacheKey).Result()
