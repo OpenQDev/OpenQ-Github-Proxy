@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"reflect"
 	"time"
 )
 
@@ -29,6 +30,17 @@ type RequestBody struct {
 	Variables map[string]interface{} `json:"variables"`
 }
 
+func isNil(i interface{}) bool {
+	if i == nil {
+		return true
+	}
+	switch reflect.TypeOf(i).Kind() {
+	case reflect.Ptr, reflect.Map, reflect.Array, reflect.Chan, reflect.Slice:
+		return reflect.ValueOf(i).IsNil()
+	}
+	return false
+}
+
 func mapIdsToCacheKeys(req *http.Request, cacheKey string) {
 	// Get variables off of the request body (GraphQL query)
 	var bodyType RequestBody
@@ -45,13 +57,21 @@ func mapIdsToCacheKeys(req *http.Request, cacheKey string) {
 	// Variable will either be called id or ids
 
 	// SINGULAR ID
-	id := bodyType.Variables["id"].(string)
-	client.LPush(req.Context(), id, []string{cacheKey})
+	nullableId := bodyType.Variables["id"]
+
+	if !isNil(nullableId) {
+		id := bodyType.Variables["id"].(string)
+		client.LPush(req.Context(), id, []string{cacheKey})
+	}
 
 	// PLURAL IDs
-	ids := bodyType.Variables["ids"].([]interface{})
-	for _, v := range ids {
-		client.LPush(req.Context(), v.(string), cacheKey)
+	nullableIds := bodyType.Variables["ids"]
+
+	if !isNil(nullableIds) {
+		ids := bodyType.Variables["ids"].([]interface{})
+		for _, v := range ids {
+			client.LPush(req.Context(), v.(string), cacheKey)
+		}
 	}
 
 	// Re-append request body to *http.Request pointer for later modification
