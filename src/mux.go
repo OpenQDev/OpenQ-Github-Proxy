@@ -22,7 +22,12 @@ func invalidateEntity(w http.ResponseWriter, r *http.Request) {
 		log.Panic(err)
 	}
 
+	w.Header().Add("Access-Control-Allow-Origin", os.Getenv("ORIGIN"))
+	w.Header().Add("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Add("Access-Control-Allow-Methods", "POST")
+	w.Header().Add("Access-Control-Allow-Credentials", "true")
 	w.WriteHeader(http.StatusNoContent)
+	return
 }
 
 func getMux(proxy *httputil.ReverseProxy) *http.ServeMux {
