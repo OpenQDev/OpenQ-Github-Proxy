@@ -22,12 +22,8 @@ func invalidateEntity(w http.ResponseWriter, r *http.Request) {
 		log.Panic(err)
 	}
 
-	w.Header().Add("Access-Control-Allow-Origin", os.Getenv("ORIGIN"))
-	w.Header().Add("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Add("Access-Control-Allow-Methods", "POST")
-	w.Header().Add("Access-Control-Allow-Credentials", "true")
+	addCorsHeaders(w)
 	w.WriteHeader(http.StatusNoContent)
-	return
 }
 
 func getMux(proxy *httputil.ReverseProxy) *http.ServeMux {
@@ -39,11 +35,7 @@ func getMux(proxy *httputil.ReverseProxy) *http.ServeMux {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 
 		if r.Method == http.MethodOptions {
-			headers := w.Header()
-			headers.Add("Access-Control-Allow-Origin", os.Getenv("ORIGIN"))
-			headers.Add("Access-Control-Allow-Headers", "Content-Type")
-			headers.Add("Access-Control-Allow-Methods", "POST")
-			headers.Add("Access-Control-Allow-Credentials", "true")
+			addCorsHeaders(w)
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
@@ -66,10 +58,7 @@ func getMux(proxy *httputil.ReverseProxy) *http.ServeMux {
 		} else {
 			fmt.Println("Cache hit! Sending cached response.")
 			// Response found in cache, serve it to the client
-			w.Header().Set("Access-Control-Allow-Origin", os.Getenv("ORIGIN"))
-			w.Header().Set("Access-Control-Allow-Headers", "*")
-			w.Header().Set("Access-Control-Allow-Credentials", "true")
-			w.Header().Set("Access-Control-Allow-Methods", "POST")
+			addCorsHeaders(w)
 
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("Content-Encoding", "gzip")
@@ -78,4 +67,11 @@ func getMux(proxy *httputil.ReverseProxy) *http.ServeMux {
 	})
 
 	return mux
+}
+
+func addCorsHeaders(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", os.Getenv("ORIGIN"))
+	w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Methods", "POST")
 }
