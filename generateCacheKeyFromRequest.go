@@ -15,7 +15,7 @@ func generateCacheKeyFromRequest(req *http.Request) (string, error) {
 	}
 
 	h := sha256.New()
-	h.Write([]byte(string(reqBody)))
+	h.Write(append(reqBody, []byte(req.URL.Path)...))
 	cacheHex := h.Sum(nil)
 	cacheKey := hex.EncodeToString(cacheHex)
 
