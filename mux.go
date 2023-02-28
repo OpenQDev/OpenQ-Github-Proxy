@@ -50,7 +50,7 @@ func getMux(proxy *httputil.ReverseProxy) *http.ServeMux {
 
 		if err == redis.Nil {
 			// Cache miss
-			fmt.Println("Cache miss. Calling Github GraphQL API")
+			fmt.Println("Cache miss. Calling Github API")
 			proxy.ServeHTTP(w, r)
 		} else if err != nil {
 			// Error occurred while fetching from cache
