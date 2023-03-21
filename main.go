@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"net/http"
+	"time"
 
 	_ "github.com/joho/godotenv/autoload"
 )
@@ -13,6 +15,7 @@ import (
 var client = getRedisClient()
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
 	proxy := getProxy()
 	mux := getMux(proxy)
 
