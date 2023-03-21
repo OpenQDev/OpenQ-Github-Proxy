@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"net/http"
 	"os"
@@ -20,6 +21,7 @@ func setAuthorizationHeader(req *http.Request) {
 		pats := strings.Split(commaDelimitedPATs, ",")
 		index := rand.Intn(len(pats))
 		randomPat := pats[index]
+		fmt.Println(randomPat)
 
 		req.Header.Set("Authorization", "Bearer "+randomPat)
 	}
