@@ -43,6 +43,15 @@ func getMux(proxy *httputil.ReverseProxy) *http.ServeMux {
 			return
 		}
 
+		// Print the request body
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Panic(err)
+		}
+
+		fmt.Println("Request body:")
+		fmt.Println(string(body))
+
 		cacheKey, err := generateCacheKeyFromRequest(r)
 		if err != nil {
 			log.Panic(err)
