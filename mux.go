@@ -59,7 +59,7 @@ func getMux(proxy *httputil.ReverseProxy) *http.ServeMux {
 			fmt.Println("Cache hit! Sending cached response.")
 			// Response found in cache, serve it to the client
 			addCorsHeaders(w)
-
+			fmt.Println(val)
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("Content-Encoding", "gzip")
 			w.Write([]byte(val))
