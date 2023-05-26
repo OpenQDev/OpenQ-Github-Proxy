@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -59,10 +62,33 @@ func getMux(proxy *httputil.ReverseProxy) *http.ServeMux {
 			fmt.Println("Cache hit! Sending cached response.")
 			// Response found in cache, serve it to the client
 			addCorsHeaders(w)
-			fmt.Println(val)
+
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("Content-Encoding", "gzip")
 			w.Write([]byte(val))
+
+			// Create an io.Reader from the gzipped value.
+			reader := bytes.NewReader([]byte(val))
+
+			// Create a new gzip reader from the reader.
+			gr, err := gzip.NewReader(reader)
+			if err != nil {
+				// Handle the error if the gzipped value is invalid.
+				fmt.Println("Error creating gzip reader:", err)
+				return
+			}
+			defer gr.Close()
+
+			// Decompress the gzipped value and read the decompressed data.
+			decompressed, err := ioutil.ReadAll(gr)
+			if err != nil {
+				// Handle the error if the decompression fails.
+				fmt.Println("Error decompressing value:", err)
+				return
+			}
+
+			// Print the decompressed value.
+			fmt.Println(string(decompressed))
 		}
 	})
 
