@@ -52,6 +52,9 @@ func getMux(proxy *httputil.ReverseProxy) *http.ServeMux {
 		fmt.Println("Request body:")
 		fmt.Println(string(body))
 
+		// Open back up the request body for the proxy
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+
 		cacheKey, err := generateCacheKeyFromRequest(r)
 		if err != nil {
 			log.Panic(err)
