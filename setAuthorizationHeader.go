@@ -8,7 +8,10 @@ import (
 )
 
 func setAuthorizationHeader(req *http.Request) {
-	const OAUTH_TOKEN_COOKIE_NAME string = "github_oauth_token_unsigned"
+	const (
+		OAUTH_TOKEN_COOKIE_NAME = "github_oauth_token_unsigned"
+		OAUTH_TOKEN_HEADER_NAME = "Authorization"
+	)
 
 	// Check for the "github_oauth_token_unsigned" cookie
 	if cookie, err := req.Cookie(OAUTH_TOKEN_COOKIE_NAME); err == nil {
