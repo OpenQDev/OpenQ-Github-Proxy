@@ -19,18 +19,6 @@ jobs:
         run: |
           ENVIRONMENT=$(echo "${{ github.ref_name }}" | sed 's/-.*//')
           echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
-      - name: Load proper env from secret
-        run: |
-          if [ "${{ env.ENVIRONMENT }}" = "staging" ]; then
-            echo "${{ secrets.STAGING_ENV }}" | base64 --decode > $(pwd)/.env
-            echo "BUILD_NUMBER=${{ github.ref_name }}" >> $(pwd)/.env
-            echo "" >> $(pwd)/.env
-          fi
-          if [ "${{ env.ENVIRONMENT }}" = "production" ]; then
-            echo "${{ secrets.PRODUCTION_ENV }}" | base64 --decode > $(pwd)/.env
-            echo "BUILD_NUMBER=${{ github.ref_name }}" >> $(pwd)/.env
-            echo "" >> $(pwd)/.env
-          fi
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
       - name: Login to DockerHub
@@ -45,8 +33,6 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: openq/github-proxy:${{ github.ref_name }}
-          build-args: |
-            "deploy_env=${{ env.ENVIRONMENT }}"
   pushHelm:
     name: Update Helm Chart and Commit New Tag
     runs-on: ubuntu-latest
