@@ -33,6 +33,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: openq/openq-github-proxy:${{ github.ref_name }}
+          build-args: |
+            "deploy_env=${{ env.ENVIRONMENT }}"
   pushHelm:
     name: Update Helm Chart and Commit New Tag
     runs-on: ubuntu-latest
