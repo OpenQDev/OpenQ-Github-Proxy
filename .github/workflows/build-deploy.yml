@@ -32,7 +32,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: openq/github-proxy:${{ github.ref_name }}
+          tags: openq/openq-github-proxy:${{ github.ref_name }}
   pushHelm:
     name: Update Helm Chart and Commit New Tag
     runs-on: ubuntu-latest
